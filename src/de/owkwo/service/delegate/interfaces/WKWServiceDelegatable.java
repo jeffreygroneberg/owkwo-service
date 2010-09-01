@@ -17,8 +17,7 @@ public interface WKWServiceDelegatable {
 	
 	public void onLogOut(String status);
 	
-	public void onUpdate(ArrayList<ParentNewsPost> posts, String status );
-	
+	public void onUpdate(ArrayList<ParentNewsPost> posts, String status );	
 	
 
 }
