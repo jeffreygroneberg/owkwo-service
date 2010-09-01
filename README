@@ -1,0 +1,19 @@
+Owkwo
+-----------------------
+
+An API for all the functions within the www.wer-kennt-wen.de network.
+The concept is due to a lack of an open api to construct and parse all the HTTP-Request to gain access to the underlying functions.
+For usage in mobile clients like android it will be async and event driven by a delegate pattern.
+
+The API will be quite easy to use:
+
+Instantiate the WKWService class and provide a class implementing the WKWServiceDelegatable interface with all the callback functions or using
+the WKWServiceDelegateTemplate and overriding only the callbacks you need.
+
+e.g.
+WKWService myWKWServiceAccess = new WKWService(myWKWServiceDelegate);
+
+Call the methods on your WKWService instance and react within the callbacks in your provided delegate.
+
+
+iPhone version will follow.
