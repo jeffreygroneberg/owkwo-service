@@ -15,21 +15,17 @@ import de.owkwo.model.profile.User;
  */
 public class ParentNewsPost extends NewsPost {
 
-	private ArrayList<NewsPost> postThread;
+	private ArrayList<NewsPost> comments;
 
 	public ParentNewsPost(String id, User author, Date postDate,
-			String message, ArrayList<NewsPost> postThread) {
+			String message, ArrayList<NewsPost> comments) {
 		super(id, author, postDate, message);
-		this.postThread = postThread;
+		this.comments = comments;
 	}
 
-	public ArrayList<NewsPost> getPostThread() {
-		return postThread;
-	}
-
-	public void setPostThread(ArrayList<NewsPost> postThread) {
-		this.postThread = postThread;
-	}
+	public ArrayList<NewsPost> getComments() {
+		return comments;
+	}	
 	
 
 }
