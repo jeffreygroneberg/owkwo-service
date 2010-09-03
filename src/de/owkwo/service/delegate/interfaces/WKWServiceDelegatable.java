@@ -13,7 +13,7 @@ public interface WKWServiceDelegatable {
 	
 	public void onComment(ArrayList<ParentNewsPost> posts, String status );
 	
-	public void onLogIn(ArrayList<ParentNewsPost> posts, String status);
+	public void onLogIn(String status);
 	
 	public void onLogOut(String status);
 	

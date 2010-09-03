@@ -43,7 +43,7 @@ public class WKWServiceDelegateTemplate implements WKWServiceDelegatable {
 	 * @see de.owkwo.service.delegate.interfaces.WKWServiceDelegatable#onLogIn(java.util.ArrayList, java.lang.String)
 	 */
 	@Override
-	public void onLogIn(ArrayList<ParentNewsPost> posts, String status) {
+	public void onLogIn(String status) {
 		// TODO Auto-generated method stub
 
 	}
