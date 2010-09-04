@@ -57,13 +57,13 @@ public class WKWServiceDelegateTemplate implements WKWServiceDelegatable {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see de.owkwo.service.delegate.interfaces.WKWServiceDelegatable#onUpdate(java.util.ArrayList, java.lang.String)
-	 */
-	@Override
-	public void onUpdate(ArrayList<ParentNewsPost> posts, String status) {
-		// TODO Auto-generated method stub
+	
 
+	@Override
+	public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts,
+			String status, int page) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

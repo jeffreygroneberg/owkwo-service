@@ -1,8 +1,5 @@
 package de.owkwo.model.posts;
 
-import java.util.ArrayList;
-import java.util.Date;
-
 import de.owkwo.model.profile.User;
 
 /**
@@ -13,10 +10,10 @@ public class NewsPost {
 
 	private String id;
 	private User author;
-	private Date postDate;
+	private String postDate;
 	private String message;
 
-	public NewsPost(String id, User author, Date postDate, String message) {
+	public NewsPost(String id, User author, String postDate, String message) {
 		super();
 		this.id = id;
 		this.author = author;
@@ -36,7 +33,7 @@ public class NewsPost {
 		return message;
 	}	
 
-	public Date getPostDate() {
+	public String getPostDate() {
 		return postDate;
 	}
 

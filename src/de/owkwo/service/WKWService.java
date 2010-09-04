@@ -5,8 +5,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.text.html.HTML.Tag;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -18,7 +16,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
-import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
@@ -27,6 +24,7 @@ import org.htmlcleaner.TagNode;
 import org.htmlcleaner.XPatherException;
 
 import de.owkwo.model.posts.ParentNewsPost;
+import de.owkwo.model.profile.User;
 import de.owkwo.service.delegate.interfaces.WKWServiceDelegatable;
 
 public class WKWService {
@@ -237,9 +235,105 @@ public class WKWService {
 
 	}
 
+	public void getPostsForPage(final int page) {
+
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+
+				HttpGet httpget = new HttpGet(NEWS_PAGE_ANY_URL
+						+ new Integer(page).toString());
+				try {
+
+					HtmlCleaner htmlCleaner = new HtmlCleaner();
+
+					htmlCleaner.getProperties().setTranslateSpecialEntities(
+							true);
+					HttpEntity entity = client.execute(httpget).getEntity();
+
+					
+					//Can't give html cleaner the inputstream, coz it will fail due to 
+					//missing charset handling. Using IOUtils to convert to String
+					//Page is small. So no memory issues to frightened of.
+					
+					TagNode cleanPage = htmlCleaner.clean((IOUtils.toString(
+							entity.getContent(), "ISO-8859-1")));
+					try {
+						// Gathering all the information with xpath
+						// To all the Brainy Smurfs out there:
+						// I fucking know, that those can be better.
+						
+						Object[] foundPicNodes = cleanPage
+								.evaluateXPath("//table[@id='photolist']//td[@class='pic']//img");
+						Object[] foundlistCellNodes = cleanPage
+								.evaluateXPath("//table[@id='photolist']//td[@class='listcell']");
+						Object[] foundCommentNodes = cleanPage
+								.evaluateXPath("//a[@class='writeComment']/@href");
+
+						// Check if everything is fine. Else send error.
+						if (foundPicNodes == null || foundPicNodes.length == 0)
+							delegate.onNewsPageUpdate(null,
+									WKWServiceDelegatable.STATUS_ERROR, page);
+
+						// Create the authors
+						ArrayList<ParentNewsPost> newsPosts = new ArrayList<ParentNewsPost>();
+						for (int i = 0; i < foundPicNodes.length; i++) {
+
+							// Extract data for Author and Post
+							TagNode img = (TagNode) foundPicNodes[i];
+							String avatarUrl = img.getAttributeByName("src");
+							String userName = img.getAttributeByName("alt");
+
+							TagNode listCell = (TagNode) foundlistCellNodes[i];
+							String postDate = listCell.getElementsByName(
+									"span", true)[0].getText().toString();
+							String postBody = listCell.getElementsByName("p",
+									true)[0].getText().toString();
+							String commentString = (String) foundCommentNodes[i];
+							String userId = commentString.subSequence(
+									commentString.lastIndexOf("/id/") + 4,
+									commentString.lastIndexOf("/entry/"))
+									.toString();
+							String postId = commentString.subSequence(
+									commentString.lastIndexOf("/entry/") + 7,
+									commentString.length() - 2).toString();
+
+							User postAuthor = new User(userId, userName,
+									avatarUrl);
+							ParentNewsPost newsPost = new ParentNewsPost(
+									postId, postAuthor, postDate, postBody,
+									null);
+							newsPosts.add(newsPost);
+
+						}
+
+						delegate.onNewsPageUpdate(newsPosts,
+								WKWServiceDelegatable.STATUS_SUCCESSFUL, page);
+
+					} catch (XPatherException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}).start();
+
+	}
+
 	/**
-	 * --------------------------------------- FOR TESTING AND DEBUGGING
-	 * PURPOSES ---------------------------------------
+	 * --------------------------------------- 
+	 * FOR TESTING AND DEBUGGING
+	 * PURPOSES 
+	 * ---------------------------------------
 	 * 
 	 * @throws InterruptedException
 	 */
@@ -248,11 +342,13 @@ public class WKWService {
 
 		// First decline service and delegate
 
-		WKWService access = new WKWService(new WKWServiceDelegatable() {
+		final WKWService access = new WKWService(new WKWServiceDelegatable() {
 
 			@Override
-			public void onUpdate(ArrayList<ParentNewsPost> posts, String status) {
-				// TODO Auto-generated method stub
+			public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts,
+					String status, int page) {
+
+				System.out.println("News Page Update Handler Call");
 
 			}
 
@@ -286,9 +382,15 @@ public class WKWService {
 		});
 
 		// Call the service functions
-		
-		//Try to login
-		access.logIn("email", "pass");
+
+		// Try to login
+		access.logIn("user", "pass");
+		//Sleep few seconds due to missing multi-threading in client
+		Thread.sleep(10000);
+		//get posts
+		access.getPostsForPage(1);
+
+		//
 
 	}
 
