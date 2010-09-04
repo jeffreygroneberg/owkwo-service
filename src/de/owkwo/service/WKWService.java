@@ -9,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -16,8 +17,17 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.params.ConnManagerParams;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -82,9 +92,28 @@ public class WKWService {
 	public WKWService(WKWServiceDelegatable delegate) {
 
 		this.delegate = delegate;
-		this.client = new DefaultHttpClient();
-		client.getParams().setParameter(ClientPNames.COOKIE_POLICY,
+
+		// Setting parameters
+		HttpParams params = new BasicHttpParams();
+
+		// Don't follow redirects. We need it for error handling
+		params.setParameter(ClientPNames.HANDLE_REDIRECTS, false);
+		ConnManagerParams.setMaxTotalConnections(params, 100);
+		HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+		params.setParameter(ClientPNames.COOKIE_POLICY,
 				CookiePolicy.BROWSER_COMPATIBILITY);
+
+		// Create and initialize scheme registry
+		SchemeRegistry schemeRegistry = new SchemeRegistry();
+		schemeRegistry.register(new Scheme("http", PlainSocketFactory
+				.getSocketFactory(), 80));
+
+		// Create an HttpClient with the ThreadSafeClientConnManager.
+		// This connection manager must be used if more than one thread will
+		// be using the HttpClient.
+		ClientConnectionManager cm = new ThreadSafeClientConnManager(params,
+				schemeRegistry);
+		this.client = new DefaultHttpClient(cm, params);
 
 	}
 
@@ -252,18 +281,19 @@ public class WKWService {
 							true);
 					HttpEntity entity = client.execute(httpget).getEntity();
 
-					
-					//Can't give html cleaner the inputstream, coz it will fail due to 
-					//missing charset handling. Using IOUtils to convert to String
-					//Page is small. So no memory issues to frightened of.
-					
+					// Can't give html cleaner the inputstream, coz it will fail
+					// due to
+					// missing charset handling. Using IOUtils to convert to
+					// String
+					// Page is small. So no memory issues to frightened of.
+
 					TagNode cleanPage = htmlCleaner.clean((IOUtils.toString(
 							entity.getContent(), "ISO-8859-1")));
 					try {
 						// Gathering all the information with xpath
 						// To all the Brainy Smurfs out there:
 						// I fucking know, that those can be better.
-						
+
 						Object[] foundPicNodes = cleanPage
 								.evaluateXPath("//table[@id='photolist']//td[@class='pic']//img");
 						Object[] foundlistCellNodes = cleanPage
@@ -347,8 +377,18 @@ public class WKWService {
 			@Override
 			public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts,
 					String status, int page) {
-
-				System.out.println("News Page Update Handler Call");
+				System.out.println("------------------------------------");	
+				System.out.println("Posts for Page: " + page);
+				System.out.println("------------------------------------");
+				for(ParentNewsPost item : posts) {
+					
+					System.out.println(item.getAuthor().getName() + " says:");
+					System.out.println(item.getMessage());
+					System.out.println("\n at " + item.getPostDate());					
+				
+				}
+					
+				System.out.println();
 
 			}
 
@@ -385,10 +425,14 @@ public class WKWService {
 
 		// Try to login
 		access.logIn("user", "pass");
-		//Sleep few seconds due to missing multi-threading in client
+		// Sleep view seconds to ensure login
 		Thread.sleep(10000);
-		//get posts
+		// get all posts. multithreaded
 		access.getPostsForPage(1);
+		access.getPostsForPage(2);
+		access.getPostsForPage(3);
+		access.getPostsForPage(4);
+		access.getPostsForPage(5);
 
 		//
 
