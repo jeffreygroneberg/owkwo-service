@@ -9,7 +9,7 @@ public interface WKWServiceDelegatable {
 	public final static String STATUS_SUCCESSFUL = "successful";
 	public final static String STATUS_ERROR = "error";
 	
-	public void onPost(ArrayList<ParentNewsPost> posts, String status );
+	public void onPost(String status );
 	
 	public void onComment(ArrayList<ParentNewsPost> posts, String status );
 	

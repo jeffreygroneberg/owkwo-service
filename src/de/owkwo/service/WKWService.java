@@ -43,7 +43,8 @@ public class WKWService {
 	 * Constants for all the URLs needed on Wer-kennt-wen.de
 	 */
 
-	public static final String WKW_START_PAGE = "http://mobil.wer-kennt-wen.de/";
+	public static final String WKW_LOGIN_PAGE = "http://mobil.wer-kennt-wen.de/";
+	public static final String WKW_START_PAGE = "http://mobil.wer-kennt-wen.de/start/";
 
 	public static final String LOGIN_URL = "http://mobil.wer-kennt-wen.de/index/";
 	public static final String LOGOUT_URL = "http://mobil.wer-kennt-wen.de/index/logout/";
@@ -155,7 +156,7 @@ public class WKWService {
 
 				// First of alle create hashkeys to emulate browser usage for
 				// wkw
-				initHashKeys();
+				initHashKeys(WKW_LOGIN_PAGE);
 
 				HttpPost httppost = new HttpPost(LOGIN_URL);
 				httppost.addHeader(
@@ -231,10 +232,78 @@ public class WKWService {
 		}).start();
 
 	}
+	
+	
+	public void createNewPost(final String message) {
+		
+		new Thread(new Runnable() {
 
-	protected void initHashKeys() {
+			@Override
+			public void run() {
 
-		HttpGet httpget = new HttpGet(WKW_START_PAGE);
+				// First of alle create hashkeys to emulate browser usage for
+				// wkw
+				initHashKeys(WKW_START_PAGE);
+
+				HttpPost httppost = new HttpPost(WKW_START_PAGE);
+				httppost.addHeader(
+						"User-Agent",
+						"Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_4; en-US) AppleWebKit/534.3 (KHTML, like Gecko) Chrome/6.0.472.53 Safari/534.3");
+				httppost.addHeader(
+						"Accept",
+						"application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5");
+				httppost.addHeader("Content-Type",
+						"application/x-www-form-urlencoded");
+
+				List<NameValuePair> formparams = new ArrayList<NameValuePair>();
+				
+				formparams.add(new BasicNameValuePair("_hash", hash));
+				formparams.add(new BasicNameValuePair("_hashKey", hashKey));
+				formparams.add(new BasicNameValuePair("send",
+						"senden"));
+				formparams.add(new BasicNameValuePair("justnowForm",
+				"1"));
+				formparams.add(new BasicNameValuePair("body",
+				message));
+
+
+
+				UrlEncodedFormEntity entity;
+				try {
+
+					entity = new UrlEncodedFormEntity(formparams, HTTP.UTF_8);
+					httppost.setEntity(entity);
+
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				HttpResponse response;
+				try {
+
+					response = client.execute(httppost);
+					HttpEntity respEntity = response.getEntity();
+					int statusCode = response.getStatusLine().getStatusCode();
+					respEntity.consumeContent();
+
+					delegate.onPost(statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL : WKWServiceDelegatable.STATUS_ERROR);
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}).start();
+		
+	}
+
+	protected void initHashKeys(String page) {
+
+		HttpGet httpget = new HttpGet(page);
 		try {
 
 			HttpResponse resp = client.execute(httpget);
@@ -393,7 +462,7 @@ public class WKWService {
 			}
 
 			@Override
-			public void onPost(ArrayList<ParentNewsPost> posts, String status) {
+			public void onPost(String status) {
 				// TODO Auto-generated method stub
 
 			}
@@ -428,11 +497,7 @@ public class WKWService {
 		// Sleep view seconds to ensure login
 		Thread.sleep(10000);
 		// get all posts. multithreaded
-		access.getPostsForPage(1);
-		access.getPostsForPage(2);
-		access.getPostsForPage(3);
-		access.getPostsForPage(4);
-		access.getPostsForPage(5);
+		access.createNewPost("Hallo - Test");
 
 		//
 
