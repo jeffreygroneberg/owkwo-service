@@ -668,7 +668,7 @@ public class WKWService {
 		// Call the service functions
 
 		// Try to login
-		access.logIn("inkvine@gmx.net", "enomis");
+		access.logIn("user", "pass");
 		// Sleep view seconds to ensure login
 
 		// get all posts. multi-threaded
