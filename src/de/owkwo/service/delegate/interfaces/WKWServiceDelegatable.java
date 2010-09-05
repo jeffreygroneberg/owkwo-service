@@ -21,5 +21,7 @@ public interface WKWServiceDelegatable {
 	
 	public void onCommentForPost(ArrayList<NewsPost> newsPosts, String userId, String postId, int page, String status);
 	
+	public void onProfileHTML(String html, String status);
+	
 
 }

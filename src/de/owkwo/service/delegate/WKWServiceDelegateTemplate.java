@@ -72,4 +72,10 @@ public class WKWServiceDelegateTemplate implements WKWServiceDelegatable {
 		
 	}
 
+	@Override
+	public void onProfileHTML(String html, String status) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

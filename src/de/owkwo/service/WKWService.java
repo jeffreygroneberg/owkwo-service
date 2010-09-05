@@ -63,7 +63,7 @@ public class WKWService {
 	public static final String LOGIN_SETCOOKIE_VALUE = "0";
 
 	public static final String PROFILE_URL = "http://www.wer-kennt-wen.de/person";
-	public static final String PROFILE_ANY_URL = "http://www.wer-kennt-wen.de/person/";
+	public static final String PROFILE_ANY_URL = "http://mobil.wer-kennt-wen.de/person/index/id/";
 
 	public static final String SETTINGS_MAIN_URL = "http://www.wer-kennt-wen.de/settings/main/";
 	public static final String SETTINGS_CONTACT_URL = "http://www.wer-kennt-wen.de/settings/contact/";
@@ -537,6 +537,49 @@ public class WKWService {
 		}).start();
 
 	}
+	
+	public void getProfileHTML(final String userId) {
+		
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+
+				HttpGet httpget = new HttpGet(PROFILE_ANY_URL + userId + "/");
+				try {
+
+					HttpResponse resp = client.execute(httpget);
+
+					HtmlCleaner cleaner = new HtmlCleaner();
+					TagNode cleanHTML = cleaner.clean(resp.getEntity().getContent());
+					TagNode contentDiv = (TagNode) cleanHTML.evaluateXPath("//div[@id='content']")[0];
+					
+					delegate.onProfileHTML(cleaner.getInnerHtml(contentDiv), WKWServiceDelegatable.STATUS_SUCCESSFUL);
+					
+
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (XPatherException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}).start();
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	}
 
 	/**
 	 * --------------------------------------- 
@@ -613,6 +656,13 @@ public class WKWService {
 				System.out.println();
 
 			}
+
+			@Override
+			public void onProfileHTML(String html, String status) {
+				
+				System.out.println(html);
+				
+			}
 		});
 
 		// Call the service functions
@@ -628,8 +678,8 @@ public class WKWService {
 //		access.getPostsForPage(3);
 //		access.getPostsForPage(4);
 //		access.getPostsForPage(5);
-		access.getCommentsForPost("9npx2i7g", "47psmge9zm", 1 );
-
+//		access.getCommentsForPost("9npx2i7g", "47psmge9zm", 1 );
+		access.getProfileHTML("n9dq8jvr");
 		// access.getCommentsForPost("9npx2i7g", "59tu1k3v6u");
 
 	}
