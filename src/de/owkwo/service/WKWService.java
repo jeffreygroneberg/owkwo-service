@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -33,6 +35,7 @@ import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import org.htmlcleaner.XPatherException;
 
+import de.owkwo.model.posts.NewsPost;
 import de.owkwo.model.posts.ParentNewsPost;
 import de.owkwo.model.profile.User;
 import de.owkwo.service.delegate.interfaces.WKWServiceDelegatable;
@@ -70,6 +73,7 @@ public class WKWService {
 
 	public static final String NEWS_URL = "http://mobil.wer-kennt-wen.de/justnow/news/";
 	public static final String NEWS_PAGE_ANY_URL = "http://mobil.wer-kennt-wen.de/justnow/news/page/";
+	public static final String COMMENT_PAGE_URL = "http://mobil.wer-kennt-wen.de/justnow/index/id/";
 
 	private WKWServiceDelegatable delegate;
 	private DefaultHttpClient client;
@@ -232,10 +236,9 @@ public class WKWService {
 		}).start();
 
 	}
-	
-	
+
 	public void createNewPost(final String message) {
-		
+
 		new Thread(new Runnable() {
 
 			@Override
@@ -256,17 +259,12 @@ public class WKWService {
 						"application/x-www-form-urlencoded");
 
 				List<NameValuePair> formparams = new ArrayList<NameValuePair>();
-				
+
 				formparams.add(new BasicNameValuePair("_hash", hash));
 				formparams.add(new BasicNameValuePair("_hashKey", hashKey));
-				formparams.add(new BasicNameValuePair("send",
-						"senden"));
-				formparams.add(new BasicNameValuePair("justnowForm",
-				"1"));
-				formparams.add(new BasicNameValuePair("body",
-				message));
-
-
+				formparams.add(new BasicNameValuePair("send", "senden"));
+				formparams.add(new BasicNameValuePair("justnowForm", "1"));
+				formparams.add(new BasicNameValuePair("body", message));
 
 				UrlEncodedFormEntity entity;
 				try {
@@ -287,7 +285,8 @@ public class WKWService {
 					int statusCode = response.getStatusLine().getStatusCode();
 					respEntity.consumeContent();
 
-					delegate.onPost(statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL : WKWServiceDelegatable.STATUS_ERROR);
+					delegate.onPost(statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL
+							: WKWServiceDelegatable.STATUS_ERROR);
 				} catch (ClientProtocolException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -298,7 +297,7 @@ public class WKWService {
 
 			}
 		}).start();
-		
+
 	}
 
 	protected void initHashKeys(String page) {
@@ -333,6 +332,90 @@ public class WKWService {
 
 	}
 
+	public void getCommentsForPost(final String userId, final String postId, final int page) {
+
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+
+				HttpGet httpget = new HttpGet(COMMENT_PAGE_URL + userId
+						+ "/entry/" + postId + "/page/" + page);
+				try {
+
+					HtmlCleaner htmlCleaner = new HtmlCleaner();
+
+					htmlCleaner.getProperties().setTranslateSpecialEntities(
+							false);
+					HttpEntity entity = client.execute(httpget).getEntity();
+
+					// Can't give html cleaner the inputstream, coz it will fail
+					// due to
+					// missing charset handling. Using IOUtils to convert to
+					// String
+					// Page is small. So no memory issues to frightened of.
+
+					TagNode cleanPage = htmlCleaner.clean((IOUtils.toString(
+							entity.getContent(), "ISO-8859-1")));
+					try {
+						// Gathering all the information with xpath
+						// To all the Brainy Smurfs out there:
+						// I fucking know, that those can be better.
+
+						Object[] foundPicNodes = cleanPage
+								.evaluateXPath("//table[@id='photolist']//td[@class='pic']//img");
+						Object[] foundlistCellNodes = cleanPage
+								.evaluateXPath("//table[@id='photolist']//td[@class='listcell']");
+					
+						// Check if everything is fine. Else send error.
+						if (foundPicNodes == null || foundPicNodes.length == 0)
+							delegate.onCommentForPost(null, userId, postId, page,
+									WKWServiceDelegatable.STATUS_ERROR);
+
+						// Create the authors
+						ArrayList<NewsPost> newsPosts = new ArrayList<NewsPost>();
+						for (int i = 0; i < foundPicNodes.length; i++) {
+
+							// Extract data for Author and Post
+							TagNode img = (TagNode) foundPicNodes[i];
+							String avatarUrl = img.getAttributeByName("src");
+							String userName = img.getAttributeByName("alt");
+
+							TagNode listCell = (TagNode) foundlistCellNodes[i];
+							String postDate = listCell.getElementsByName(
+									"span", true)[0].getText().toString();
+							String postBody = listCell.getElementsByName("p",
+									true)[0].getText().toString();
+
+							User postAuthor = new User(userId, userName,
+									avatarUrl);
+							NewsPost newsPost = new NewsPost(postId,
+									postAuthor, postDate, postBody);
+							newsPosts.add(newsPost);
+
+						}
+
+						delegate.onCommentForPost(newsPosts, userId, postId, page,
+								WKWServiceDelegatable.STATUS_SUCCESSFUL);
+
+					} catch (XPatherException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}).start();
+
+	}
+
 	public void getPostsForPage(final int page) {
 
 		new Thread(new Runnable() {
@@ -347,7 +430,7 @@ public class WKWService {
 					HtmlCleaner htmlCleaner = new HtmlCleaner();
 
 					htmlCleaner.getProperties().setTranslateSpecialEntities(
-							true);
+							false);
 					HttpEntity entity = client.execute(httpget).getEntity();
 
 					// Can't give html cleaner the inputstream, coz it will fail
@@ -369,6 +452,8 @@ public class WKWService {
 								.evaluateXPath("//table[@id='photolist']//td[@class='listcell']");
 						Object[] foundCommentNodes = cleanPage
 								.evaluateXPath("//a[@class='writeComment']/@href");
+						Object[] commentNumbers = cleanPage
+								.evaluateXPath("//a[@class='writeComment']/text()");
 
 						// Check if everything is fine. Else send error.
 						if (foundPicNodes == null || foundPicNodes.length == 0)
@@ -403,6 +488,31 @@ public class WKWService {
 							ParentNewsPost newsPost = new ParentNewsPost(
 									postId, postAuthor, postDate, postBody,
 									null);
+
+							// Handle comment Pages
+							String commentNumberString = commentNumbers[i]
+									.toString();
+
+							// Use regex to get the number of comments
+							Pattern numberPattern = Pattern.compile("[0-9]+");
+							Matcher m = numberPattern
+									.matcher(commentNumberString);
+							int number = -1;
+							if (m.find())
+								number = Integer.parseInt(m.group(0));
+
+							if (number < 0) {
+
+								newsPost.setCommentPages(0);
+								newsPost.setCommentNumber(0);
+
+							} else {
+								newsPost.setCommentPages((number / 5 > 0) ? ((number % 5 == 0) ? (number / 5)
+										: (number / 5) + 1)
+										: 1);
+								newsPost.setCommentNumber(number);
+							}
+
 							newsPosts.add(newsPost);
 
 						}
@@ -446,17 +556,19 @@ public class WKWService {
 			@Override
 			public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts,
 					String status, int page) {
-				System.out.println("------------------------------------");	
+
+				System.out.println("------------------------------------");
 				System.out.println("Posts for Page: " + page);
 				System.out.println("------------------------------------");
-				for(ParentNewsPost item : posts) {
-					
+				for (ParentNewsPost item : posts) {
+
 					System.out.println(item.getAuthor().getName() + " says:");
 					System.out.println(item.getMessage());
-					System.out.println("\n at " + item.getPostDate());					
-				
+					System.out.println("\n at " + item.getPostDate());
+					System.out.println("Mit " + item.getCommentNumber()+ " Kommentaren und " + item.getCommentPages() + " Kommentar-Seiten");
+
 				}
-					
+				//
 				System.out.println();
 
 			}
@@ -484,8 +596,21 @@ public class WKWService {
 			}
 
 			@Override
-			public void onComment(ArrayList<ParentNewsPost> posts, String status) {
-				// TODO Auto-generated method stub
+			public void onCommentForPost(ArrayList<NewsPost> posts,
+					String userId, String postId, int page, String status) {
+
+				System.out.println("------------------------------------");
+				System.out.println("Comments for Post " + postId + " from Page: " + page + " from user " + userId);
+				System.out.println("------------------------------------");
+				for (NewsPost item : posts) {
+
+					System.out.println(item.getAuthor().getName() + " says:");
+					System.out.println(item.getMessage());
+					System.out.println("\n at " + item.getPostDate());				
+
+				}
+				//
+				System.out.println();
 
 			}
 		});
@@ -495,11 +620,17 @@ public class WKWService {
 		// Try to login
 		access.logIn("user", "pass");
 		// Sleep view seconds to ensure login
-		Thread.sleep(10000);
-		// get all posts. multithreaded
-		access.createNewPost("Hallo - Test");
 
-		//
+		// get all posts. multi-threaded
+		Thread.sleep(10000);
+//		access.getPostsForPage(1);
+//		access.getPostsForPage(2);
+//		access.getPostsForPage(3);
+//		access.getPostsForPage(4);
+//		access.getPostsForPage(5);
+		access.getCommentsForPost("9npx2i7g", "47psmge9zm", 1 );
+
+		// access.getCommentsForPost("9npx2i7g", "59tu1k3v6u");
 
 	}
 
