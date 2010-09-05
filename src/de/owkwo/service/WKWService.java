@@ -269,7 +269,7 @@ public class WKWService {
 				UrlEncodedFormEntity entity;
 				try {
 
-					entity = new UrlEncodedFormEntity(formparams, HTTP.UTF_8);
+					entity = new UrlEncodedFormEntity(formparams, HTTP.ISO_8859_1);
 					httppost.setEntity(entity);
 
 				} catch (UnsupportedEncodingException e) {
@@ -481,7 +481,7 @@ public class WKWService {
 									.toString();
 							String postId = commentString.subSequence(
 									commentString.lastIndexOf("/entry/") + 7,
-									commentString.length() - 2).toString();
+									commentString.length() - 1).toString();
 
 							User postAuthor = new User(userId, userName,
 									avatarUrl);
@@ -668,7 +668,7 @@ public class WKWService {
 		// Call the service functions
 
 		// Try to login
-		access.logIn("user", "pass");
+		access.logIn("inkvine@gmx.net", "enomis");
 		// Sleep view seconds to ensure login
 
 		// get all posts. multi-threaded
@@ -678,8 +678,8 @@ public class WKWService {
 //		access.getPostsForPage(3);
 //		access.getPostsForPage(4);
 //		access.getPostsForPage(5);
-//		access.getCommentsForPost("9npx2i7g", "47psmge9zm", 1 );
-		access.getProfileHTML("n9dq8jvr");
+		access.getCommentsForPost("q5qmjcj6", "00ui52hpqb", 1 );
+		
 		// access.getCommentsForPost("9npx2i7g", "59tu1k3v6u");
 
 	}
