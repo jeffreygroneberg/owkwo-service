@@ -430,7 +430,7 @@ public class WKWService {
 					HtmlCleaner htmlCleaner = new HtmlCleaner();
 
 					htmlCleaner.getProperties().setTranslateSpecialEntities(
-							false);
+							true);
 					HttpEntity entity = client.execute(httpget).getEntity();
 
 					// Can't give html cleaner the inputstream, coz it will fail
@@ -473,7 +473,7 @@ public class WKWService {
 							String postDate = listCell.getElementsByName(
 									"span", true)[0].getText().toString();
 							String postBody = listCell.getElementsByName("p",
-									true)[0].getText().toString();
+									true)[0].getText().toString().trim();
 							String commentString = (String) foundCommentNodes[i];
 							String userId = commentString.subSequence(
 									commentString.lastIndexOf("/id/") + 4,
@@ -673,12 +673,12 @@ public class WKWService {
 
 		// get all posts. multi-threaded
 		Thread.sleep(10000);
-//		access.getPostsForPage(1);
-//		access.getPostsForPage(2);
-//		access.getPostsForPage(3);
-//		access.getPostsForPage(4);
-//		access.getPostsForPage(5);
-		access.getCommentsForPost("q5qmjcj6", "00ui52hpqb", 1 );
+		access.getPostsForPage(1);
+		access.getPostsForPage(2);
+		access.getPostsForPage(3);
+		access.getPostsForPage(4);
+		access.getPostsForPage(5);
+		
 		
 		// access.getCommentsForPost("9npx2i7g", "59tu1k3v6u");
 
