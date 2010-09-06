@@ -347,8 +347,9 @@ public class WKWService {
 
 					HtmlCleaner htmlCleaner = new HtmlCleaner();
 
+
 					htmlCleaner.getProperties().setTranslateSpecialEntities(
-							false);
+							true);
 					HttpEntity entity = client.execute(httpget).getEntity();
 
 					// Can't give html cleaner the inputstream, coz it will fail
@@ -387,7 +388,7 @@ public class WKWService {
 							String postDate = listCell.getElementsByName(
 									"span", true)[0].getText().toString();
 							String postBody = listCell.getElementsByName("p",
-									true)[0].getText().toString();
+									true)[0].getText().toString().trim();
 
 							User postAuthor = new User(userId, userName,
 									avatarUrl);
