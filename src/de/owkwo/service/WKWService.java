@@ -269,7 +269,8 @@ public class WKWService {
 				UrlEncodedFormEntity entity;
 				try {
 
-					entity = new UrlEncodedFormEntity(formparams, HTTP.ISO_8859_1);
+					entity = new UrlEncodedFormEntity(formparams,
+							HTTP.ISO_8859_1);
 					httppost.setEntity(entity);
 
 				} catch (UnsupportedEncodingException e) {
@@ -285,7 +286,7 @@ public class WKWService {
 					int statusCode = response.getStatusLine().getStatusCode();
 					respEntity.consumeContent();
 
-					delegate.onPost(statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL
+					delegate.onCreatePost(statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL
 							: WKWServiceDelegatable.STATUS_ERROR);
 				} catch (ClientProtocolException e) {
 					// TODO Auto-generated catch block
@@ -332,7 +333,8 @@ public class WKWService {
 
 	}
 
-	public void getCommentsForPost(final String userId, final String postId, final int page) {
+	public void getCommentsForPost(final String userId, final String postId,
+			final int page) {
 
 		new Thread(new Runnable() {
 
@@ -366,11 +368,11 @@ public class WKWService {
 								.evaluateXPath("//table[@id='photolist']//td[@class='pic']//img");
 						Object[] foundlistCellNodes = cleanPage
 								.evaluateXPath("//table[@id='photolist']//td[@class='listcell']");
-					
+
 						// Check if everything is fine. Else send error.
 						if (foundPicNodes == null || foundPicNodes.length == 0)
-							delegate.onCommentForPost(null, userId, postId, page,
-									WKWServiceDelegatable.STATUS_ERROR);
+							delegate.onGetCommentForPost(null, userId, postId,
+									page, WKWServiceDelegatable.STATUS_ERROR);
 
 						// Create the authors
 						ArrayList<NewsPost> newsPosts = new ArrayList<NewsPost>();
@@ -395,8 +397,8 @@ public class WKWService {
 
 						}
 
-						delegate.onCommentForPost(newsPosts, userId, postId, page,
-								WKWServiceDelegatable.STATUS_SUCCESSFUL);
+						delegate.onGetCommentForPost(newsPosts, userId, postId,
+								page, WKWServiceDelegatable.STATUS_SUCCESSFUL);
 
 					} catch (XPatherException e) {
 						// TODO Auto-generated catch block
@@ -457,7 +459,7 @@ public class WKWService {
 
 						// Check if everything is fine. Else send error.
 						if (foundPicNodes == null || foundPicNodes.length == 0)
-							delegate.onNewsPageUpdate(null,
+							delegate.onGetPostsForPage(null,
 									WKWServiceDelegatable.STATUS_ERROR, page);
 
 						// Create the authors
@@ -517,7 +519,7 @@ public class WKWService {
 
 						}
 
-						delegate.onNewsPageUpdate(newsPosts,
+						delegate.onGetPostsForPage(newsPosts,
 								WKWServiceDelegatable.STATUS_SUCCESSFUL, page);
 
 					} catch (XPatherException e) {
@@ -537,9 +539,9 @@ public class WKWService {
 		}).start();
 
 	}
-	
+
 	public void getProfileHTML(final String userId) {
-		
+
 		new Thread(new Runnable() {
 
 			@Override
@@ -551,11 +553,13 @@ public class WKWService {
 					HttpResponse resp = client.execute(httpget);
 
 					HtmlCleaner cleaner = new HtmlCleaner();
-					TagNode cleanHTML = cleaner.clean(resp.getEntity().getContent());
-					TagNode contentDiv = (TagNode) cleanHTML.evaluateXPath("//div[@id='content']")[0];
-					
-					delegate.onProfileHTML(cleaner.getInnerHtml(contentDiv), WKWServiceDelegatable.STATUS_SUCCESSFUL);
-					
+					TagNode cleanHTML = cleaner.clean(resp.getEntity()
+							.getContent());
+					TagNode contentDiv = (TagNode) cleanHTML
+							.evaluateXPath("//div[@id='content']")[0];
+
+					delegate.onGetProfileHTML(cleaner.getInnerHtml(contentDiv),
+							WKWServiceDelegatable.STATUS_SUCCESSFUL);
 
 				} catch (ClientProtocolException e) {
 					// TODO Auto-generated catch block
@@ -570,22 +574,78 @@ public class WKWService {
 
 			}
 		}).start();
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+	}
+
+	public void createCommentForPost(final String userId, final String postId,
+			final String message) {
+
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+
+				// First of alle create hashkeys to emulate browser usage for
+				// wkw
+				initHashKeys(COMMENT_PAGE_URL + userId
+						+ "/entry/" + postId + "/");
+
+				HttpPost httppost = new HttpPost(COMMENT_PAGE_URL + userId
+				+ "/entry/" + postId + "/");
+				httppost.addHeader(
+						"User-Agent",
+						"Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_4; en-US) AppleWebKit/534.3 (KHTML, like Gecko) Chrome/6.0.472.53 Safari/534.3");
+				httppost.addHeader(
+						"Accept",
+						"application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5");
+				httppost.addHeader("Content-Type",
+						"application/x-www-form-urlencoded");
+
+				List<NameValuePair> formparams = new ArrayList<NameValuePair>();
+
+				formparams.add(new BasicNameValuePair("_hash", hash));
+				formparams.add(new BasicNameValuePair("_hashKey", hashKey));
+				formparams.add(new BasicNameValuePair("send", "kommentieren"));				
+				formparams.add(new BasicNameValuePair("body", message));
+
+				UrlEncodedFormEntity entity;
+				try {
+
+					entity = new UrlEncodedFormEntity(formparams,
+							HTTP.ISO_8859_1);
+					httppost.setEntity(entity);
+
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				HttpResponse response;
+				try {
+
+					response = client.execute(httppost);
+					HttpEntity respEntity = response.getEntity();
+					int statusCode = response.getStatusLine().getStatusCode();
+					respEntity.consumeContent();
+
+					delegate.onCreateCommentForPost(userId, postId, statusCode == 200 ? WKWServiceDelegatable.STATUS_SUCCESSFUL
+							: WKWServiceDelegatable.STATUS_ERROR);
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}).start();
+
 	}
 
 	/**
-	 * --------------------------------------- 
-	 * FOR TESTING AND DEBUGGING
-	 * PURPOSES 
-	 * ---------------------------------------
+	 * --------------------------------------- FOR TESTING AND DEBUGGING
+	 * PURPOSES ---------------------------------------
 	 * 
 	 * @throws InterruptedException
 	 */
@@ -597,7 +657,7 @@ public class WKWService {
 		final WKWService access = new WKWService(new WKWServiceDelegatable() {
 
 			@Override
-			public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts,
+			public void onGetPostsForPage(ArrayList<ParentNewsPost> posts,
 					String status, int page) {
 
 				System.out.println("------------------------------------");
@@ -608,7 +668,9 @@ public class WKWService {
 					System.out.println(item.getAuthor().getName() + " says:");
 					System.out.println(item.getMessage());
 					System.out.println("\n at " + item.getPostDate());
-					System.out.println("Mit " + item.getCommentNumber()+ " Kommentaren und " + item.getCommentPages() + " Kommentar-Seiten");
+					System.out.println("Mit " + item.getCommentNumber()
+							+ " Kommentaren und " + item.getCommentPages()
+							+ " Kommentar-Seiten");
 
 				}
 				//
@@ -617,7 +679,7 @@ public class WKWService {
 			}
 
 			@Override
-			public void onPost(String status) {
+			public void onCreatePost(String status) {
 				// TODO Auto-generated method stub
 
 			}
@@ -639,17 +701,18 @@ public class WKWService {
 			}
 
 			@Override
-			public void onCommentForPost(ArrayList<NewsPost> posts,
+			public void onGetCommentForPost(ArrayList<NewsPost> posts,
 					String userId, String postId, int page, String status) {
 
 				System.out.println("------------------------------------");
-				System.out.println("Comments for Post " + postId + " from Page: " + page + " from user " + userId);
+				System.out.println("Comments for Post " + postId
+						+ " from Page: " + page + " from user " + userId);
 				System.out.println("------------------------------------");
 				for (NewsPost item : posts) {
 
 					System.out.println(item.getAuthor().getName() + " says:");
 					System.out.println(item.getMessage());
-					System.out.println("\n at " + item.getPostDate());				
+					System.out.println("\n at " + item.getPostDate());
 
 				}
 				//
@@ -658,9 +721,16 @@ public class WKWService {
 			}
 
 			@Override
-			public void onProfileHTML(String html, String status) {
-				
+			public void onGetProfileHTML(String html, String status) {
+
 				System.out.println(html);
+
+			}
+
+			@Override
+			public void onCreateCommentForPost(String userId, String postId,
+					String status) {
+				// TODO Auto-generated method stub
 				
 			}
 		});
@@ -678,8 +748,7 @@ public class WKWService {
 		access.getPostsForPage(3);
 		access.getPostsForPage(4);
 		access.getPostsForPage(5);
-		
-		
+
 		// access.getCommentsForPost("9npx2i7g", "59tu1k3v6u");
 
 	}

@@ -10,18 +10,19 @@ public interface WKWServiceDelegatable {
 	public final static String STATUS_SUCCESSFUL = "successful";
 	public final static String STATUS_ERROR = "error";
 	
-	public void onPost(String status );
-	
+	public void onCreatePost(String status );	
 	
 	public void onLogIn(String status);
 	
 	public void onLogOut(String status);
 	
-	public void onNewsPageUpdate(ArrayList<ParentNewsPost> posts, String status, int page );	
+	public void onGetPostsForPage(ArrayList<ParentNewsPost> posts, String status, int page );	
 	
-	public void onCommentForPost(ArrayList<NewsPost> newsPosts, String userId, String postId, int page, String status);
+	public void onGetCommentForPost(ArrayList<NewsPost> newsPosts, String userId, String postId, int page, String status);
 	
-	public void onProfileHTML(String html, String status);
+	public void onGetProfileHTML(String html, String status);
+	
+	public void onCreateCommentForPost(String userId, String postId, String status);
 	
 
 }
